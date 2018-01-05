@@ -33,14 +33,14 @@ compile_ext:
 test: compile_ext redis
 	@$(MAKE) unit coverage
 	@$(MAKE) integration_run
-	@$(MAKE) static
+	@$(MAKE) flake
 	@$(MAKE) kill_redis
 
 ci_test: compile_ext
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo "TORNADO IS `python -c 'import tornado; import inspect; print(inspect.getfile(tornado))'`"
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@if [ -z "$$INTEGRATION_TEST" ]; then $(MAKE) unit static coverage; else $(MAKE) integration_run; fi
+	@if [ "$$LINT_TEST" ]; then $(MAKE) flake; elif [ -z "$$INTEGRATION_TEST" ]; then $(MAKE) unit coverage; else $(MAKE) integration_run; fi
 
 integration_run:
 	@nosetests -sv integration_tests/
@@ -79,9 +79,6 @@ build_docs:
 
 docs: setup_docs build_docs
 	python -mwebbrowser file:///`pwd`/docs/_build/html/index.html
-
-static:
-	@flake8 --config=./flake8 .
 
 sample_images:
 	convert -delay 100 -size 100x100 gradient:blue gradient:red -loop 0 integration_tests/imgs/animated.gif
@@ -150,4 +147,4 @@ sample_images:
 	cp tests/fixtures/filters/source.jpg tests/fixtures/filters/800px-Katherine_Maher.jpg
 	cp tests/fixtures/images/Giunchedi%2C_Filippo_January_2015_01.jpg tests/fixtures/filters/Giunchedi%2C_Filippo_January_2015_01.jpg
 	# the watermark filter's logic is too complicated to reproduce with IM, the watermark test images can't be generated here
-	# similarly, the noise, colorize and fill filters generate output too unique to be reproduce with IM and can't be generated here
+	# similarly, the noise, colorize, redeye and fill filters generate output too unique to be reproduce with IM and can't be generated here

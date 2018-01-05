@@ -13,15 +13,15 @@ import random
 import unicodedata
 from io import BytesIO
 from unittest import TestCase as PythonTestCase
-import urllib
 import mimetypes
 from os.path import exists, realpath, dirname, join
-import cStringIO
 import mock
 
 from PIL import Image
 from ssim import compute_ssim
 from preggy import create_assertions
+from six import StringIO
+from six.moves.urllib.parse import urlencode
 
 from thumbor.app import ThumborServiceApp
 from thumbor.context import Context, RequestParameters
@@ -70,33 +70,33 @@ def to_be_the_same_as(topic, expected):
 
 @create_assertions
 def to_be_similar_to(topic, expected):
-    topic_image = Image.open(cStringIO.StringIO(topic))
-    expected_image = Image.open(cStringIO.StringIO(expected))
+    topic_image = Image.open(StringIO(topic))
+    expected_image = Image.open(StringIO(expected))
 
     return get_ssim(topic_image, expected_image) > 0.95
 
 
 @create_assertions
 def to_be_webp(topic):
-    im = Image.open(cStringIO.StringIO(topic))
+    im = Image.open(StringIO(topic))
     return im.format.lower() == 'webp'
 
 
 @create_assertions
 def to_be_png(topic):
-    im = Image.open(cStringIO.StringIO(topic))
+    im = Image.open(StringIO(topic))
     return im.format.lower() == 'png'
 
 
 @create_assertions
 def to_be_gif(topic):
-    im = Image.open(cStringIO.StringIO(topic))
+    im = Image.open(StringIO(topic))
     return im.format.lower() == 'gif'
 
 
 @create_assertions
 def to_be_jpeg(topic):
-    im = Image.open(cStringIO.StringIO(topic))
+    im = Image.open(StringIO(topic))
     return im.format.lower() == 'jpeg'
 
 
@@ -179,7 +179,7 @@ class TestCase(AsyncHTTPTestCase):
     def get(self, path, headers):
         return self.fetch(path,
                           method='GET',
-                          body=urllib.urlencode({}, doseq=True),
+                          body=urlencode({}, doseq=True),
                           headers=headers,
                           allow_nonstandard_methods=True)
 
@@ -200,7 +200,7 @@ class TestCase(AsyncHTTPTestCase):
     def delete(self, path, headers):
         return self.fetch(path,
                           method='DELETE',
-                          body=urllib.urlencode({}, doseq=True),
+                          body=urlencode({}, doseq=True),
                           headers=headers,
                           allow_nonstandard_methods=True)
 
