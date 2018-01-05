@@ -17,9 +17,11 @@ from io import BytesIO
 from PIL import Image, ImageFile, ImageDraw, ImageSequence, JpegImagePlugin
 
 try:
-    from cv2 import cv
-except:
+    import cv2
+    import numpy
+except ImportError:
     cv = None
+    numpy = None
 
 from thumbor.engines import BaseEngine
 from thumbor.engines.extensions.pil import GifWriter
@@ -67,7 +69,6 @@ class Engine(BaseEngine):
             logger.warning("[PILEngine] create_image failed: {0}".format(e))
             return None
         self.icc_profile = img.info.get('icc_profile')
-        self.transparency = img.info.get('transparency')
         self.exif = img.info.get('exif')
 
         self.subsampling = JpegImagePlugin.get_sampling(img)
@@ -119,6 +120,8 @@ class Engine(BaseEngine):
         if self.image.mode in ['1', 'P']:
             logger.debug('converting image from 8-bit/1-bit palette to 32-bit RGBA for resize')
             self.image = self.image.convert('RGBA')
+            # Workaround for pillow < 4.3.0. See https://github.com/python-pillow/Pillow/issues/2702
+            self.image.palette = None
 
         resample = self.get_resize_filter()
         self.image = self.image.resize((int(width), int(height)), resample)
@@ -211,9 +214,6 @@ class Engine(BaseEngine):
             if self.exif is not None:
                 options['exif'] = self.exif
 
-        if self.image.mode == 'P' and self.transparency:
-            options['transparency'] = self.transparency
-
         try:
             if ext == '.webp':
                 if self.image.mode not in ['RGB', 'RGBA']:
@@ -284,19 +284,17 @@ class Engine(BaseEngine):
         return results
 
     def convert_tif_to_png(self, buffer):
-        if not cv:
+        if not cv2:
+            msg = """[PILEngine] convert_tif_to_png failed: opencv not imported"""
+            logger.error(msg)
+            return buffer
+        if not numpy:
             msg = """[PILEngine] convert_tif_to_png failed: opencv not imported"""
             logger.error(msg)
             return buffer
 
-        # can not use cv2 here, because ubuntu precise shipped with python-opencv 2.3 which has bug with imencode
-        # requires 3rd parameter buf which could not be created in python. Could be replaced with these lines:
-        # img = cv2.imdecode(numpy.fromstring(buffer, dtype='uint16'), -1)
-        # buffer = cv2.imencode('.png', img)[1].tostring()
-        mat_data = cv.CreateMatHeader(1, len(buffer), cv.CV_8UC1)
-        cv.SetData(mat_data, buffer, len(buffer))
-        img = cv.DecodeImage(mat_data, -1)
-        buffer = cv.EncodeImage(".png", img).tostring()
+        img = cv2.imdecode(numpy.fromstring(buffer, dtype='uint16'), -1)
+        buffer = cv2.imencode('.png', img)[1].tostring()
 
         mime = self.get_mimetype(buffer)
         self.extension = EXTENSION.get(mime, '.jpg')

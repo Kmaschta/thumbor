@@ -289,11 +289,11 @@ class BaseHandler(tornado.web.RequestHandler):
             else:
                 return False
             while True:
-                l = ord(data[i])
+                j = ord(data[i])
                 i += 1
-                if not l:
+                if not j:
                     break
-                i += l
+                i += j
         return frames > 1
 
     def define_image_type(self, context, result):
@@ -438,8 +438,8 @@ class BaseHandler(tornado.web.RequestHandler):
         should_vary = should_vary and content_type.startswith("image/")
         # output format is not requested via format filter
         should_vary = should_vary and not (
-            context.request.format  # format is supported by filter
-            and bool(re.search(r"format\([^)]+\)", context.request.filters))  # filter is in request
+            context.request.format and  # format is supported by filter
+            bool(re.search(r"format\([^)]+\)", context.request.filters))  # filter is in request
         )
         # our image is not animated gif
         should_vary = should_vary and not self.is_animated_gif(buffer)
