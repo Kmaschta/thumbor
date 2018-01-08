@@ -1,7 +1,7 @@
 libcurl4-openssl-dev
 python-numpy
-python-opencv
-libopencv-dev
+python-opencv>=3.3.1
+libopencv-dev>=3.3.1
 libjpeg-dev
 libpng-dev
 libx264-dev
